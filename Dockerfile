@@ -4,4 +4,4 @@ RUN mkdir /var/app
 COPY ./ /var/app
 WORKDIR /var/app
 
-CMD ["php", "index.php"]
+ENTRYPOINT ["php", "index.php"]
