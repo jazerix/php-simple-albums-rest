@@ -4,32 +4,28 @@ include_once "Response.php";
 
 class Server
 {
+    private array $albums = [];
+    private int $albumId = 1;
 
     public function __construct()
     {
-        session_start();
-        if (!isset($_SESSION['albums']))
-            $_SESSION['albums'] = [];
-        if (!isset($_SESSION['album_id']))
-            $_SESSION['album_id'] = 1;
-
         header("Content-Type: application/json");
     }
 
-    public function response(): Response
+    public function response(Swoole\Http\Request $request): Response
     {
-        if ($_SERVER['REQUEST_METHOD'] == 'GET')
-            return $this->handleGet();
+        if (strtolower($request->getMethod()) == 'get')
+            return $this->handleGet($request);
         else
-            return $this->handlePost();
+            return $this->handlePost($request);
     }
 
-    public function handleGet(): Response
+    public function handleGet(Swoole\Http\Request $request): Response
     {
-        if (empty($_GET['id']))
-            return new Response(200, $_SESSION['albums']);
+        if (empty($request->get['id']))
+            return new Response(200, $this->albums);
 
-        $found = array_filter($_SESSION['albums'], fn($album) => $album['id'] == $_GET['id']);
+        $found = array_filter($this->albums, fn($album) => $album['id'] == $request->get['id']);
         if (count($found) == 0)
             return new Response(404, [
                 'status' => 'error',
@@ -39,21 +35,21 @@ class Server
         return new Response(200, array_values($found)[0]);
     }
 
-    public function handlePost(): Response
+    public function handlePost(Swoole\Http\Request $request): Response
     {
-        if (empty($_POST['name'])) {
+        if (empty($request->post['name'])) {
             return new Response(400, [
                 'status' => 'error',
                 'message' => 'Missing form parameter "name"',
             ]);
         }
 
-        $_SESSION['albums'][] = [
-            'id' => $_SESSION['album_id'],
-            'name' => $_POST['name']
+        $this->albums[] = [
+            'id' => $this->albumId,
+            'name' => $request->post['name']
         ];
 
-        $_SESSION['album_id']++;
+        $this->albumId++;
 
         return new Response(200, [
             'status' => 'success',
